@@ -18,6 +18,9 @@
     "url": "https://github.com/RizgarOzan"
   },
   "license": "MIT",
+  "documentationUrl": "https://github.com/RizgarOzan/tmp-glyph-audit/blob/main/README.md",
+  "changelogUrl": "https://github.com/RizgarOzan/tmp-glyph-audit/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/RizgarOzan/tmp-glyph-audit/blob/main/LICENSE",
   "repository": {
     "type": "git",
     "url": "https://github.com/RizgarOzan/tmp-glyph-audit.git"
