@@ -1,0 +1,28 @@
+{
+  "name": "com.rizgarozan.tmp-glyph-audit",
+  "version": "0.1.0",
+  "displayName": "TMP Glyph Audit",
+  "description": "Finds every TextMeshPro text in your scenes, prefabs and runtime text files that its font (and fallback chain) cannot draw, before players see the empty boxes. Editor window + batch-mode entry point for CI.",
+  "unity": "2023.2",
+  "keywords": [
+    "TextMeshPro",
+    "TMP",
+    "font",
+    "glyph",
+    "localization",
+    "missing characters",
+    "fallback"
+  ],
+  "author": {
+    "name": "Rızgar Ozan",
+    "url": "https://github.com/RizgarOzan"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RizgarOzan/tmp-glyph-audit.git"
+  },
+  "dependencies": {
+    "com.unity.ugui": "2.0.0"
+  }
+}

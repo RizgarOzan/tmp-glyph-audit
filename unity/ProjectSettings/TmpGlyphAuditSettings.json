@@ -1,0 +1,13 @@
+{
+    "folders": ["Assets"],
+    "scanScenes": true,
+    "scanPrefabs": true,
+    "textSources": [
+        {
+            "folder": "Assets/Localization",
+            "pattern": "*.txt",
+            "fontAsset": "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset",
+            "richText": true
+        }
+    ]
+}

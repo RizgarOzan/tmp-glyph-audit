@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The source of truth is the Unity package's Core folder; this project only
+       compiles those same files so they can be tested without Unity. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>RizgarOzan.TmpGlyphAudit</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../packages/com.rizgarozan.tmp-glyph-audit/Core/**/*.cs" LinkBase="Core" />
+  </ItemGroup>
+
+</Project>
