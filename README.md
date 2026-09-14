@@ -72,7 +72,7 @@ literally — TMP does the same.
 - A `<font="…">` tag switches font mid-text in TMP; the audit checks the whole text against
   the component's own font, so text inside such a tag can be reported as missing.
 - **Unity Localization string tables** are not read yet — export them to text or help add
-  it (see issues).
+  it ([#9](https://github.com/RizgarOzan/tmp-glyph-audit/issues/9)).
 - `DynamicOS` font assets are checked against the fonts installed on the machine running the
   audit, which may differ from your players'.
 
@@ -93,6 +93,9 @@ unity test unity --mode EditMode                 # 4 tests, uses a generated tes
 
 `tools/make_test_font.py` builds the tiny font the Unity tests use (fontTools), so the repo
 carries no third-party font of its own.
+
+Want to help? Issues labelled [`good first issue`](https://github.com/RizgarOzan/tmp-glyph-audit/labels/good%20first%20issue)
+say what to change and how the result is checked; several need only the .NET SDK, not Unity.
 
 ## License
 
