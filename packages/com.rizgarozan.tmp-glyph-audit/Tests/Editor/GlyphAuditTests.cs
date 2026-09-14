@@ -76,6 +76,23 @@ public class GlyphAuditTests
     }
 
     [Test]
+    public void Font_tag_text_is_reported_under_the_font_the_tag_loads()
+    {
+        // unity/ has TMP Essential Resources: LiberationSans SDF sits in Resources/Fonts & Materials.
+        var main = StaticWith("AB");
+        var audit = new GlyphAudit();
+        audit.Check("AB<font=\"LiberationSans SDF\">漢</font>", main, true, true, "test", "known font");
+        audit.Check("<font=\"No Such Font\">漢", main, true, true, "test", "unknown font");
+
+        Assert.AreEqual(2, audit.Report.Findings.Count);
+        StringAssert.EndsWith("LiberationSans SDF.asset", audit.Report.Findings[0].Font);
+        Assert.AreEqual(new[] { Kanji }, audit.Report.Findings[0].Missing.ToArray());
+        // TMP cannot load the font, so it draws the tag as text in the text's own font.
+        Assert.AreEqual(main.name, audit.Report.Findings[1].Font);
+        Assert.AreEqual(new[] { Kanji }, audit.Report.Findings[1].Missing.ToArray());
+    }
+
+    [Test]
     public void Text_components_are_found_with_their_hierarchy_path()
     {
         LogAssert.ignoreFailingMessages = true; // TMP may complain about missing TMP Settings in a bare project

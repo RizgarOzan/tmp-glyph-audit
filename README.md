@@ -67,10 +67,14 @@ escapes draw the character they name, surrogate pairs are one character, and con
 zero-width and bidi characters are skipped. Unknown tags such as `<madeup>` are drawn
 literally — TMP does the same.
 
+`<font="Name">` switches font mid-text, so the text up to `</font>` is checked against
+that font's chain and reported under that font. The name is looked up in
+`Resources/<TMP Settings font path>` (`Fonts & Materials/` by default), then among all TMP
+font assets in the project, since TMP also finds fonts other texts have already loaded.
+A tag naming a font that exists nowhere is drawn as text, as TMP draws it.
+
 ## Limits
 
-- A `<font="…">` tag switches font mid-text in TMP; the audit checks the whole text against
-  the component's own font, so text inside such a tag can be reported as missing.
 - **Unity Localization string tables** are not read yet — export them to text or help add
   it ([#9](https://github.com/RizgarOzan/tmp-glyph-audit/issues/9)).
 - `DynamicOS` font assets are checked against the fonts installed on the machine running the
@@ -82,13 +86,13 @@ The rules (text scanning, fallback resolution, the report) are plain C# with no 
 reference, compiled both into the package and into a .NET project:
 
 ```bash
-dotnet test tests/TmpGlyphAudit.Core.Tests      # 18 tests, no Unity needed
+dotnet test tests/TmpGlyphAudit.Core.Tests      # 24 tests, no Unity needed
 ```
 
 The Unity side is tested in `unity/` (Unity 6000.3, TMP Essential Resources imported):
 
 ```bash
-unity test unity --mode EditMode                 # 4 tests, uses a generated test font
+unity test unity --mode EditMode                 # 5 tests, uses a generated test font
 ```
 
 `tools/make_test_font.py` builds the tiny font the Unity tests use (fontTools), so the repo

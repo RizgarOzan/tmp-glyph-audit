@@ -77,6 +77,41 @@ public class GlyphResolverTests
     }
 
     [Fact]
+    public void Text_inside_a_font_tag_is_checked_against_that_font()
+    {
+        var main = new FakeFont("Main", "ab");
+        var cjk = new FakeFont("CJK", "漢");
+        IGlyphSource byName(string n) => n == "CJK" ? cjk : null;
+        var resolver = new GlyphResolver();
+
+        Assert.Empty(resolver.MissingByFont(main, "a<font=CJK>漢</font>b", fontByName: byName));
+
+        var missing = resolver.MissingByFont(main, "c<font=\"CJK\">漢d</font>", fontByName: byName);
+        Assert.Equal(2, missing.Count);
+        Assert.Same(main, missing[0].Font);
+        Assert.Equal(new uint[] { 'c' }, missing[0].Missing.ToArray());
+        Assert.Same(cjk, missing[1].Font);
+        Assert.Equal(new uint[] { 'd' }, missing[1].Missing.ToArray());
+    }
+
+    [Fact]
+    public void Font_tag_with_an_unknown_name_leaves_text_on_its_own_font()
+    {
+        var main = new FakeFont("Main", "<font=\"Nope\">漢");
+        var missing = new GlyphResolver().MissingByFont(main, "<font=\"Nope\">漢x", fontByName: _ => null);
+        Assert.Equal(new uint[] { 'x' }, missing.Single().Missing.ToArray());
+    }
+
+    [Fact]
+    public void Report_counts_texts_not_findings()
+    {
+        var report = new AuditReport { TextsScanned = 1 };
+        report.Findings.Add(new Finding { Source = "a.prefab", Location = "T", Font = "Main", Missing = new SortedSet<uint> { 'x' } });
+        report.Findings.Add(new Finding { Source = "a.prefab", Location = "T", Font = "CJK", Missing = new SortedSet<uint> { 'y' } });
+        Assert.Contains("1 texts scanned, 1 with missing glyphs", report.ToText());
+    }
+
+    [Fact]
     public void Report_groups_by_font_and_exports_a_character_set()
     {
         var report = new AuditReport { TextsScanned = 3 };

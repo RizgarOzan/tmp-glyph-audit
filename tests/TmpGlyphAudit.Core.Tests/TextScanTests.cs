@@ -67,6 +67,35 @@ public class TextScanTests
         Assert.Equal(new uint[] { 'a', 'b' }, TextScan.Distinct("baab").ToArray());
     }
 
+    static string Fonts(string text, Func<string, bool> fontExists = null) =>
+        string.Join(" ", TextScan.Runs(text, fontExists: fontExists)
+            .Select(r => char.ConvertFromUtf32((int)r.CodePoint) + ":" + (r.Font ?? "-")));
+
+    [Fact]
+    public void Font_tags_switch_font_until_closed()
+    {
+        Assert.Equal("a:- b:Bangers SDF c:-", Fonts("a<font=\"Bangers SDF\">b</font>c"));
+        Assert.Equal("a:X b:Y c:X d:-", Fonts("<font=X>a<font=Y>b</font>c</font>d"));
+        Assert.Equal("a:Y", Fonts("<font=\"Y\" material=\"Y Outline\">a"));
+    }
+
+    [Fact]
+    public void Font_default_returns_to_the_text_font_and_extra_closing_tags_are_harmless()
+    {
+        Assert.Equal("a:X b:- c:X d:-", Fonts("<font=X>a<font=Default>b</font>c</font></font>d"));
+    }
+
+    [Fact]
+    public void Font_tag_naming_an_unknown_font_is_drawn_literally()
+    {
+        // TMP rejects the tag when neither loaded fonts nor Resources have that name.
+        string scanned = string.Concat(TextScan.Runs("<font=\"Nope\">a", fontExists: n => n == "Yes")
+            .Select(r => char.ConvertFromUtf32((int)r.CodePoint)));
+        Assert.Equal("<font=\"Nope\">a", scanned);
+        Assert.Equal("a:Yes", Fonts("<font=Yes>a", n => n == "Yes"));
+        Assert.Equal("<font>", Scan("<font>")); // no name: TMP cannot load anything
+    }
+
     [Fact]
     public void Tag_longer_than_tmp_limit_is_literal()
     {

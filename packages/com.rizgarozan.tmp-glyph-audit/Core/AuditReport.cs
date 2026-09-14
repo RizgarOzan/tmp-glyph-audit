@@ -9,7 +9,7 @@ namespace RizgarOzan.TmpGlyphAudit
     {
         public string Source;      // asset path: scene, prefab or text file
         public string Location;    // hierarchy path or line number inside the source
-        public string Font;        // primary font asset the text uses
+        public string Font;        // font asked for the characters: the text's own, or one a <font> tag switched to
         public SortedSet<uint> Missing;
     }
 
@@ -46,7 +46,8 @@ namespace RizgarOzan.TmpGlyphAudit
             var sb = new StringBuilder();
             sb.Append("TMP Glyph Audit: ").Append(TextsScanned).Append(" texts scanned, ");
             if (Clean) return sb.Append("no missing glyphs.").ToString();
-            sb.Append(Findings.Count).Append(" with missing glyphs.\n");
+            // A text with <font> tags can have one finding per font.
+            sb.Append(Findings.Select(f => (f.Source, f.Location)).Distinct().Count()).Append(" with missing glyphs.\n");
             foreach (var pair in MissingByFont())
             {
                 sb.Append("\n").Append(pair.Key).Append(" is missing ").Append(pair.Value.Count)
