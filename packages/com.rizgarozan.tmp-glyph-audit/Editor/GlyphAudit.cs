@@ -13,15 +13,19 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
     public sealed class GlyphAudit
     {
         readonly Dictionary<TMP_FontAsset, TmpFontSource> _fonts = new Dictionary<TMP_FontAsset, TmpFontSource>();
+        readonly Dictionary<string, TmpFontSource> _byName = new Dictionary<string, TmpFontSource>(System.StringComparer.OrdinalIgnoreCase);
         readonly GlyphResolver _resolver;
         readonly TMP_FontAsset _defaultFont;
+        readonly string _fontAssetPath;
+        Dictionary<string, string> _fontPathsByName;
 
         public readonly AuditReport Report = new AuditReport();
 
         public GlyphAudit()
         {
-            var (globals, defaultFont) = ReadTmpSettings();
+            var (globals, defaultFont, fontAssetPath) = ReadTmpSettings();
             _defaultFont = defaultFont;
+            _fontAssetPath = fontAssetPath;
             _resolver = new GlyphResolver(
                 globals.Select(f => (IGlyphSource)TmpFontSource.For(f, _fonts)).ToList(),
                 TmpFontSource.For(defaultFont, _fonts));
@@ -46,15 +50,41 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
         {
             Report.TextsScanned++;
             font = font != null ? font : _defaultFont;
-            var missing = _resolver.Missing(TmpFontSource.For(font, _fonts), text, richText, parseEscapes);
-            if (missing.Count == 0) return;
-            Report.Findings.Add(new Finding
+            foreach (var (f, missing) in _resolver.MissingByFont(TmpFontSource.For(font, _fonts), text, richText, parseEscapes, FontByName))
+                Report.Findings.Add(new Finding
+                {
+                    Source = source,
+                    Location = location,
+                    Font = f != null ? f.Name : "(no font)",
+                    Missing = missing,
+                });
+        }
+
+        /// <summary>
+        /// The font a &lt;font="name"&gt; tag switches to. TMP first looks among fonts it has
+        /// already loaded - any font another text uses - then in Resources under the TMP
+        /// Settings font path; the audit checks Resources first, then every TMP font asset
+        /// in the project by name. Null means TMP could not load it and draws the tag as text.
+        /// </summary>
+        TmpFontSource FontByName(string name)
+        {
+            if (_byName.TryGetValue(name, out var source)) return source;
+            var font = Resources.Load<TMP_FontAsset>(_fontAssetPath + name);
+            if (font == null)
             {
-                Source = source,
-                Location = location,
-                Font = font != null ? TmpFontSource.For(font, _fonts).Name : "(no font)",
-                Missing = missing,
-            });
+                if (_fontPathsByName == null)
+                {
+                    _fontPathsByName = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+                    foreach (string guid in AssetDatabase.FindAssets("t:TMP_FontAsset"))
+                    {
+                        string path = AssetDatabase.GUIDToAssetPath(guid);
+                        _fontPathsByName[Path.GetFileNameWithoutExtension(path)] = path;
+                    }
+                }
+                if (_fontPathsByName.TryGetValue(name, out string found))
+                    font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(found);
+            }
+            return _byName[name] = TmpFontSource.For(font, _fonts);
         }
 
         public void ScanObject(GameObject root, string source)
@@ -110,22 +140,25 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
         }
 
         /// <summary>
-        /// Reads the global fallback list and default font from the project's TMP Settings
-        /// asset through SerializedObject: going through TMP_Settings.instance would pop up
-        /// the TMP Essential Resources importer in projects that have not imported them.
+        /// Reads the global fallback list, default font and &lt;font&gt;-tag search path from
+        /// the project's TMP Settings asset through SerializedObject: going through
+        /// TMP_Settings.instance would pop up the TMP Essential Resources importer in
+        /// projects that have not imported them.
         /// </summary>
-        static (List<TMP_FontAsset>, TMP_FontAsset) ReadTmpSettings()
+        static (List<TMP_FontAsset>, TMP_FontAsset, string) ReadTmpSettings()
         {
+            const string defaultPath = "Fonts & Materials/";   // TMP's own default
             var globals = new List<TMP_FontAsset>();
             var settings = Resources.Load<TMP_Settings>("TMP Settings");
-            if (settings == null) return (globals, null);
+            if (settings == null) return (globals, null, defaultPath);
             var so = new SerializedObject(settings);
             var list = so.FindProperty("m_fallbackFontAssets");
             if (list != null)
                 for (int i = 0; i < list.arraySize; i++)
                     if (list.GetArrayElementAtIndex(i).objectReferenceValue is TMP_FontAsset f) globals.Add(f);
             var dflt = so.FindProperty("m_defaultFontAsset")?.objectReferenceValue as TMP_FontAsset;
-            return (globals, dflt);
+            string path = so.FindProperty("m_defaultFontAssetPath")?.stringValue ?? defaultPath;
+            return (globals, dflt, path);
         }
 
         static string HierarchyPath(Transform t)

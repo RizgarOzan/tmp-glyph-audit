@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RizgarOzan.TmpGlyphAudit
@@ -40,9 +41,31 @@ namespace RizgarOzan.TmpGlyphAudit
         public SortedSet<uint> Missing(IGlyphSource font, string text, bool richText = true, bool parseEscapes = true)
         {
             var missing = new SortedSet<uint>();
-            foreach (uint cp in TextScan.Distinct(text, richText, parseEscapes))
-                if (!CanRender(font, cp)) missing.Add(cp);
+            foreach (var group in MissingByFont(font, text, richText, parseEscapes)) missing.UnionWith(group.Missing);
             return missing;
+        }
+
+        /// <summary>
+        /// Code points no font chain can draw, grouped by the font asked for them: the text's
+        /// own <paramref name="font"/> or, when <paramref name="fontByName"/> is given, the font
+        /// a &lt;font="…"&gt; tag switches to. A tag naming a font <paramref name="fontByName"/>
+        /// returns null for is drawn as text, as TMP does.
+        /// </summary>
+        public List<(IGlyphSource Font, SortedSet<uint> Missing)> MissingByFont(IGlyphSource font, string text,
+            bool richText = true, bool parseEscapes = true, Func<string, IGlyphSource> fontByName = null)
+        {
+            var groups = new List<(IGlyphSource Font, SortedSet<uint> Missing)>();
+            var seen = new HashSet<(IGlyphSource, uint)>();
+            Func<string, bool> exists = fontByName == null ? null : name => fontByName(name) != null;
+            foreach (var (cp, name) in TextScan.Runs(text, richText, parseEscapes, exists))
+            {
+                var f = name != null && fontByName != null ? fontByName(name) : font;
+                if (!seen.Add((f, cp)) || CanRender(f, cp)) continue;
+                int g = groups.FindIndex(x => x.Font == f);
+                if (g < 0) { g = groups.Count; groups.Add((f, new SortedSet<uint>())); }
+                groups[g].Missing.Add(cp);
+            }
+            return groups;
         }
 
         static bool Search(IGlyphSource font, uint cp, HashSet<IGlyphSource> searched)
