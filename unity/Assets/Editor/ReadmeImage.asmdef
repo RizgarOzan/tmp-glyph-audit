@@ -1,0 +1,10 @@
+{
+  "name": "ReadmeImage",
+  "references": [
+    "RizgarOzan.TmpGlyphAudit.Core",
+    "RizgarOzan.TmpGlyphAudit.Editor",
+    "Unity.TextMeshPro"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false
+}
