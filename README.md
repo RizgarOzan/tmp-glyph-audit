@@ -1,5 +1,6 @@
 # TMP Glyph Audit
 
+[![openupm](https://img.shields.io/npm/v/com.rizgarozan.tmp-glyph-audit?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rizgarozan.tmp-glyph-audit/)
 [![tests](https://github.com/RizgarOzan/tmp-glyph-audit/actions/workflows/tests.yml/badge.svg)](https://github.com/RizgarOzan/tmp-glyph-audit/actions/workflows/tests.yml)
 
 Find every TextMeshPro text your fonts **cannot draw** — before a player sees the
@@ -37,8 +38,14 @@ Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset is miss
 
 ## Install
 
-Unity 2023.2 or newer (TextMeshPro inside `com.unity.ugui` 2.0). In **Package Manager →
-+ → Add package from git URL**:
+Unity 2023.2 or newer (TextMeshPro inside `com.unity.ugui` 2.0). From
+[OpenUPM](https://openupm.com/packages/com.rizgarozan.tmp-glyph-audit/):
+
+```
+openupm add com.rizgarozan.tmp-glyph-audit
+```
+
+or in **Package Manager → + → Add package from git URL**:
 
 ```
 https://github.com/RizgarOzan/tmp-glyph-audit.git?path=/packages/com.rizgarozan.tmp-glyph-audit
@@ -93,7 +100,17 @@ that font's chain and reported under that font. The name is looked up in
 font assets in the project, since TMP also finds fonts other texts have already loaded.
 A tag naming a font that exists nowhere is drawn as text, as TMP draws it.
 
-## Limits
+## Status
+
+**0.2.0** ([changelog](CHANGELOG.md)). Scenes, prefabs, runtime text files, `<font>` tags,
+the editor window and the batch-mode CLI work and are tested on Unity 6000.3; 2023.2 is the
+declared minimum but has not been run.
+
+Next, and open to anyone: a JSON report ([#4](https://github.com/RizgarOzan/tmp-glyph-audit/issues/4)),
+GitHub Actions annotations ([#5](https://github.com/RizgarOzan/tmp-glyph-audit/issues/5)),
+selecting the object inside a prefab or scene ([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)).
+
+Known limits:
 
 - **Unity Localization string tables** are not read yet — export them to text or help add
   it ([#9](https://github.com/RizgarOzan/tmp-glyph-audit/issues/9)).

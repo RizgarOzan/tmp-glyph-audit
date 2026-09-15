@@ -6,6 +6,8 @@ All notable changes to `com.rizgarozan.tmp-glyph-audit`. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-15
+
 ### Added
 - `<font="Name">` tags: text inside is checked against the font the tag loads (Resources
   under the TMP Settings font path, then any TMP font asset of that name) and reported under
@@ -19,3 +21,7 @@ All notable changes to `com.rizgarozan.tmp-glyph-audit`. The format follows
 - **Window → Text → TMP Glyph Audit**, with per-font export of missing characters for the
   Font Asset Creator.
 - Batch-mode entry point `GlyphAuditCli.Run` with exit codes for CI.
+
+[Unreleased]: https://github.com/RizgarOzan/tmp-glyph-audit/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/RizgarOzan/tmp-glyph-audit/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/RizgarOzan/tmp-glyph-audit/releases/tag/v0.1.0
