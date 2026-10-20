@@ -38,10 +38,10 @@ namespace RizgarOzan.TmpGlyphAudit
         }
 
         /// <summary>Code points in <paramref name="text"/> that no font in the chain can draw.</summary>
-        public SortedSet<uint> Missing(IGlyphSource font, string text, bool richText = true, bool parseEscapes = true)
+        public SortedSet<uint> Missing(IGlyphSource font, string text, bool richText = true, bool parseEscapes = true, bool skipPlaceholders = false)
         {
             var missing = new SortedSet<uint>();
-            foreach (var group in MissingByFont(font, text, richText, parseEscapes)) missing.UnionWith(group.Missing);
+            foreach (var group in MissingByFont(font, text, richText, parseEscapes, null, skipPlaceholders)) missing.UnionWith(group.Missing);
             return missing;
         }
 
@@ -52,12 +52,12 @@ namespace RizgarOzan.TmpGlyphAudit
         /// returns null for is drawn as text, as TMP does.
         /// </summary>
         public List<(IGlyphSource Font, SortedSet<uint> Missing)> MissingByFont(IGlyphSource font, string text,
-            bool richText = true, bool parseEscapes = true, Func<string, IGlyphSource> fontByName = null)
+            bool richText = true, bool parseEscapes = true, Func<string, IGlyphSource> fontByName = null, bool skipPlaceholders = false)
         {
             var groups = new List<(IGlyphSource Font, SortedSet<uint> Missing)>();
             var seen = new HashSet<(IGlyphSource, uint)>();
             Func<string, bool> exists = fontByName == null ? null : name => fontByName(name) != null;
-            foreach (var (cp, name) in TextScan.Runs(text, richText, parseEscapes, exists))
+            foreach (var (cp, name) in TextScan.Runs(text, richText, parseEscapes, exists, skipPlaceholders))
             {
                 var f = name != null && fontByName != null ? fontByName(name) : font;
                 if (!seen.Add((f, cp)) || CanRender(f, cp)) continue;

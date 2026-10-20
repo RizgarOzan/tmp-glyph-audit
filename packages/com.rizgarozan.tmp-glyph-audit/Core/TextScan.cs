@@ -26,9 +26,9 @@ namespace RizgarOzan.TmpGlyphAudit
         };
 
         /// <summary>Code points that need a glyph, in order of appearance.</summary>
-        public static IEnumerable<uint> CodePoints(string text, bool richText = true, bool parseEscapes = true)
+        public static IEnumerable<uint> CodePoints(string text, bool richText = true, bool parseEscapes = true, bool skipPlaceholders = false)
         {
-            foreach (var run in Runs(text, richText, parseEscapes)) yield return run.CodePoint;
+            foreach (var run in Runs(text, richText, parseEscapes, null, skipPlaceholders)) yield return run.CodePoint;
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace RizgarOzan.TmpGlyphAudit
         /// Without it, every named font tag is taken as valid.
         /// </summary>
         public static IEnumerable<(uint CodePoint, string Font)> Runs(string text, bool richText = true, bool parseEscapes = true,
-            Func<string, bool> fontExists = null)
+            Func<string, bool> fontExists = null, bool skipPlaceholders = false)
         {
             if (string.IsNullOrEmpty(text)) yield break;
             bool noParse = false;
@@ -56,6 +56,17 @@ namespace RizgarOzan.TmpGlyphAudit
                     {
                         i += n == 'u' ? 5 : 9;
                         if (!IsIgnorable(u)) yield return (u, Top(fonts));
+                        continue;
+                    }
+                }
+
+                // Localization Smart String placeholders are formatting inputs, not rendered text.
+                if (skipPlaceholders && c == '{')
+                {
+                    int placeholderEnd = text.IndexOf('}', i + 1);
+                    if (placeholderEnd >= 0)
+                    {
+                        i = placeholderEnd;
                         continue;
                     }
                 }
@@ -97,8 +108,8 @@ namespace RizgarOzan.TmpGlyphAudit
         }
 
         /// <summary>Distinct code points, sorted.</summary>
-        public static SortedSet<uint> Distinct(string text, bool richText = true, bool parseEscapes = true)
-            => new SortedSet<uint>(CodePoints(text, richText, parseEscapes));
+        public static SortedSet<uint> Distinct(string text, bool richText = true, bool parseEscapes = true, bool skipPlaceholders = false)
+            => new SortedSet<uint>(CodePoints(text, richText, parseEscapes, skipPlaceholders));
 
         /// <summary>
         /// Characters TMP handles without looking up a glyph: control characters,

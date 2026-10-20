@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -42,15 +43,16 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
                 if (settings.scanScenes) audit.ScanScenes(folders);
             }
             foreach (var source in settings.textSources) audit.ScanTextFiles(source);
+            audit.ScanLocalizationTables(settings.localizationFonts);
             return audit.Report;
         }
 
         /// <summary>Checks one text as the given font would draw it.</summary>
-        public void Check(string text, TMP_FontAsset font, bool richText, bool parseEscapes, string source, string location)
+        public void Check(string text, TMP_FontAsset font, bool richText, bool parseEscapes, string source, string location, bool skipPlaceholders = false)
         {
             Report.TextsScanned++;
             font = font != null ? font : _defaultFont;
-            foreach (var (f, missing) in _resolver.MissingByFont(TmpFontSource.For(font, _fonts), text, richText, parseEscapes, FontByName))
+            foreach (var (f, missing) in _resolver.MissingByFont(TmpFontSource.For(font, _fonts), text, richText, parseEscapes, FontByName, skipPlaceholders))
                 Report.Findings.Add(new Finding
                 {
                     Source = source,
@@ -118,6 +120,59 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
                 if (!wasOpen) scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
                 foreach (var root in scene.GetRootGameObjects()) ScanObject(root, path);
                 if (!wasOpen) EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        /// <summary>
+        /// Scans Unity Localization StringTable assets through reflection so the package
+        /// remains usable when com.unity.localization is not installed.
+        /// </summary>
+        public void ScanLocalizationTables(IList<GlyphAuditSettings.LocaleFont> localeFonts)
+        {
+            if (localeFonts == null || localeFonts.Count == 0) return;
+
+            var fontsByLocale = new Dictionary<string, TMP_FontAsset>(System.StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in localeFonts)
+            {
+                if (pair == null || string.IsNullOrWhiteSpace(pair.localeCode)) continue;
+                var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(pair.fontAsset);
+                if (font == null)
+                {
+                    Debug.LogWarning($"TMP Glyph Audit: no TMP font asset at '{pair.fontAsset}' for locale '{pair.localeCode}'.");
+                    continue;
+                }
+                fontsByLocale[pair.localeCode.Trim()] = font;
+            }
+
+            foreach (string guid in AssetDatabase.FindAssets("t:StringTable"))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var table = AssetDatabase.LoadMainAssetAtPath(path);
+                if (table == null || table.GetType().FullName != "UnityEngine.Localization.Tables.StringTable")
+                    continue;
+
+                var tableType = table.GetType();
+                var localeIdentifier = tableType.GetProperty("LocaleIdentifier")?.GetValue(table, null);
+                string localeCode = localeIdentifier?.GetType().GetProperty("Code")?.GetValue(localeIdentifier, null)?.ToString()
+                    ?? localeIdentifier?.ToString();
+                if (string.IsNullOrWhiteSpace(localeCode) || !fontsByLocale.TryGetValue(localeCode, out var font))
+                {
+                    Debug.LogWarning($"TMP Glyph Audit: no locale font configured for StringTable '{path}' (locale '{localeCode ?? "unknown"}'); table skipped.");
+                    continue;
+                }
+
+                if (!(tableType.GetProperty("Values")?.GetValue(table, null) is IEnumerable entries))
+                    continue;
+
+                foreach (var entry in entries)
+                {
+                    if (entry == null) continue;
+                    var entryType = entry.GetType();
+                    string value = entryType.GetProperty("Value")?.GetValue(entry, null) as string;
+                    if (string.IsNullOrEmpty(value)) continue;
+                    string key = entryType.GetProperty("Key")?.GetValue(entry, null)?.ToString() ?? "(unknown key)";
+                    Check(value, font, true, true, path, key, skipPlaceholders: true);
+                }
             }
         }
 

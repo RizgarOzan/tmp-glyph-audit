@@ -6,6 +6,9 @@ All notable changes to `com.rizgarozan.tmp-glyph-audit`. The format follows
 
 ## [Unreleased]
 
+### Added
+- JSON report output for CI, selected by a `.json` `-glyphAuditReport` path.
+
 ## [0.2.0] - 2026-09-15
 
 ### Added

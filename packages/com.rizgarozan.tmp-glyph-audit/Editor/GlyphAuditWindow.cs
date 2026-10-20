@@ -92,6 +92,28 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
             }
             if (GUILayout.Button("Add text source", GUILayout.Width(120)))
                 _settings.textSources.Add(new GlyphAuditSettings.TextSource());
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Unity Localization string tables", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Configure a TMP font asset for each locale code. Requires com.unity.localization.", EditorStyles.wordWrappedMiniLabel);
+            for (int i = 0; i < _settings.localizationFonts.Count; i++)
+            {
+                var pair = _settings.localizationFonts[i];
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    pair.localeCode = EditorGUILayout.TextField(pair.localeCode, GUILayout.Width(72));
+                    var font = AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>(pair.fontAsset);
+                    font = (TMPro.TMP_FontAsset)EditorGUILayout.ObjectField(font, typeof(TMPro.TMP_FontAsset), false);
+                    pair.fontAsset = font != null ? AssetDatabase.GetAssetPath(font) : "";
+                    if (GUILayout.Button("-", GUILayout.Width(22)))
+                    {
+                        _settings.localizationFonts.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+            if (GUILayout.Button("Add locale font", GUILayout.Width(120)))
+                _settings.localizationFonts.Add(new GlyphAuditSettings.LocaleFont());
             if (EditorGUI.EndChangeCheck()) _settings.Save();
         }
 

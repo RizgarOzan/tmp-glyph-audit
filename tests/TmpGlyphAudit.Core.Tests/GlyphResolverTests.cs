@@ -1,3 +1,4 @@
+using System.Text.Json;
 using RizgarOzan.TmpGlyphAudit;
 
 public class GlyphResolverTests
@@ -126,6 +127,80 @@ public class GlyphResolverTests
         Assert.Contains("3 texts scanned, 3 with missing glyphs", text);
         Assert.Contains("Main SDF is missing 2: U+011F 'ğ', U+015F 'ş'", text);
         Assert.Contains("  Assets/Shop.prefab > Price: ğş", text);
+    }
+
+
+    [Fact]
+    public void Json_report_escapes_paths_and_contains_font_findings()
+    {
+        var report = new AuditReport { TextsScanned = 2 };
+        report.Findings.Add(new Finding
+        {
+            Source = @"Assets/Localization/""ja""\ja.txt",
+            Location = "line 1",
+            Font = "Main \"SDF\"",
+            Missing = new SortedSet<uint> { 'う', 'こ' }
+        });
+
+        using var document = JsonDocument.Parse(report.ToJson());
+        var root = document.RootElement;
+        Assert.Equal(2, root.GetProperty("textsScanned").GetInt32());
+        Assert.False(root.GetProperty("clean").GetBoolean());
+        var font = Assert.Single(root.GetProperty("fonts").EnumerateArray());
+        Assert.Equal("Main \"SDF\"", font.GetProperty("font").GetString());
+        Assert.Equal(new[] { "U+3046", "U+3053" },
+            font.GetProperty("missing").EnumerateArray().Select(value => value.GetString()).ToArray());
+        var finding = Assert.Single(font.GetProperty("findings").EnumerateArray());
+        Assert.Equal(@"Assets/Localization/""ja""\ja.txt", finding.GetProperty("source").GetString());
+        Assert.Equal("line 1", finding.GetProperty("location").GetString());
+        Assert.Equal("うこ", finding.GetProperty("missing").GetString());
+    }
+
+    [Fact]
+    public void GitHub_annotations_include_lines_for_runtime_text_and_escape_source_paths()
+    {
+        var report = new AuditReport();
+        report.Findings.Add(new Finding
+        {
+            Source = "Assets/Localization,ja.txt",
+            Location = "line 12",
+            Font = "Main",
+            Missing = new SortedSet<uint> { 'う', 'こ' }
+        });
+        report.Findings.Add(new Finding
+        {
+            Source = "Assets/Menu.prefab",
+            Location = "Canvas/Title",
+            Font = "Main",
+            Missing = new SortedSet<uint> { 'ğ' }
+        });
+
+        string[] annotations = report.ToGitHubAnnotations().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        Assert.Equal(2, annotations.Length);
+        Assert.Contains("::error file=Assets/Localization%2Cja.txt,line=12,title=Missing glyphs::", annotations[0]);
+        Assert.Contains("Main cannot draw: う こ", annotations[0]);
+        Assert.DoesNotContain(",line=", annotations[1]);
+        Assert.Contains("file=Assets/Menu.prefab,title=Missing glyphs::", annotations[1]);
+        Assert.Contains("Main cannot draw: ğ (at Canvas/Title)", annotations[1]);
+    }
+
+    [Fact]
+    public void GitHub_annotation_message_escapes_percent_and_line_breaks()
+    {
+        var report = new AuditReport();
+        report.Findings.Add(new Finding
+        {
+            Source = "Assets/100%,menu.txt",
+            Location = "line 1",
+            Font = "Main%\nSDF",
+            Missing = new SortedSet<uint> { '%' }
+        });
+
+        string annotation = report.ToGitHubAnnotations();
+
+        Assert.Contains("file=Assets/100%25%2Cmenu.txt,line=1", annotation);
+        Assert.Contains("Main%25%0ASDF cannot draw: %25", annotation);
     }
 
     [Fact]

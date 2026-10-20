@@ -25,6 +25,16 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
         /// </summary>
         public List<TextSource> textSources = new List<TextSource>();
 
+        /// <summary>Optional Unity Localization string tables, checked with a font per locale code.</summary>
+        public List<LocaleFont> localizationFonts = new List<LocaleFont>();
+
+        [Serializable]
+        public sealed class LocaleFont
+        {
+            public string localeCode = "en";
+            public string fontAsset = "";
+        }
+
         [Serializable]
         public sealed class TextSource
         {
@@ -34,8 +44,15 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
             public bool richText = true;
         }
 
-        public static GlyphAuditSettings Load() =>
-            File.Exists(Path) ? JsonUtility.FromJson<GlyphAuditSettings>(File.ReadAllText(Path)) : new GlyphAuditSettings();
+        public static GlyphAuditSettings Load()
+        {
+            var settings = File.Exists(Path)
+                ? JsonUtility.FromJson<GlyphAuditSettings>(File.ReadAllText(Path))
+                : new GlyphAuditSettings();
+            if (settings.localizationFonts == null)
+                settings.localizationFonts = new List<LocaleFont>();
+            return settings;
+        }
 
         public void Save() => File.WriteAllText(Path, JsonUtility.ToJson(this, true));
     }

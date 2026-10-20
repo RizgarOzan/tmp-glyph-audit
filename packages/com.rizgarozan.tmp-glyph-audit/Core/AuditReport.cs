@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -40,6 +41,112 @@ namespace RizgarOzan.TmpGlyphAudit
             MissingByFont().TryGetValue(font, out var set)
                 ? string.Concat(set.Select(cp => char.ConvertFromUtf32((int)cp)))
                 : "";
+
+
+        public string ToJson()
+        {
+            var sb = new StringBuilder();
+            sb.Append("{\n  \"textsScanned\": ").Append(TextsScanned)
+              .Append(",\n  \"clean\": ").Append(Clean ? "true" : "false")
+              .Append(",\n  \"fonts\": [");
+
+            var fonts = MissingByFont().ToArray();
+            for (int i = 0; i < fonts.Length; i++)
+            {
+                var pair = fonts[i];
+                sb.Append(i == 0 ? "\n" : ",\n")
+                  .Append("    {\n      \"font\": ");
+                AppendJsonString(sb, pair.Key);
+                sb.Append(",\n      \"missing\": [");
+                int missingIndex = 0;
+                foreach (uint cp in pair.Value)
+                {
+                    sb.Append(missingIndex++ == 0 ? "" : ", ")
+                      .Append('"').Append("U+").Append(cp.ToString("X4")).Append('"');
+                }
+                sb.Append("],\n      \"findings\": [");
+
+                var findings = Findings.Where(f => f.Font == pair.Key)
+                    .OrderBy(f => f.Source).ThenBy(f => f.Location).ToArray();
+                for (int j = 0; j < findings.Length; j++)
+                {
+                    var finding = findings[j];
+                    sb.Append(j == 0 ? "\n" : ",\n")
+                      .Append("        { \"source\": ");
+                    AppendJsonString(sb, finding.Source);
+                    sb.Append(", \"location\": ");
+                    AppendJsonString(sb, finding.Location);
+                    sb.Append(", \"missing\": ");
+                    AppendJsonString(sb, string.Concat(finding.Missing.Select(cp => char.ConvertFromUtf32((int)cp))));
+                    sb.Append(" }");
+                }
+                if (findings.Length > 0) sb.Append('\n').Append("      ");
+                sb.Append("]\n    }");
+            }
+            if (fonts.Length > 0) sb.Append('\n').Append("  ");
+            sb.Append("]\n}");
+            return sb.ToString();
+        }
+
+        static void AppendJsonString(StringBuilder sb, string value)
+        {
+            if (value == null)
+            {
+                sb.Append("null");
+                return;
+            }
+
+            sb.Append('"');
+            foreach (char c in value)
+            {
+                switch (c)
+                {
+                    case '"': sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\b': sb.Append("\\b"); break;
+                    case '\f': sb.Append("\\f"); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (c < 0x20)
+                            sb.Append("\\u").Append(((int)c).ToString("x4"));
+                        else
+                            sb.Append(c);
+                        break;
+                }
+            }
+            sb.Append('"');
+        }
+
+        public string ToGitHubAnnotations()
+        {
+            var sb = new StringBuilder();
+            foreach (var finding in Findings.OrderBy(f => f.Source).ThenBy(f => f.Location).ThenBy(f => f.Font))
+            {
+                int line = 0;
+                bool hasLine = finding.Location != null
+                    && finding.Location.StartsWith("line ", StringComparison.Ordinal)
+                    && int.TryParse(finding.Location.Substring(5), out line)
+                    && line > 0;
+                sb.Append("::error file=").Append(EscapeAnnotationProperty(finding.Source));
+                if (hasLine) sb.Append(",line=").Append(line);
+                sb.Append(",title=Missing glyphs::");
+                string message = finding.Font + " cannot draw: "
+                    + string.Join(" ", finding.Missing.Select(cp => char.ConvertFromUtf32((int)cp)));
+                if (!hasLine && !string.IsNullOrEmpty(finding.Location))
+                    message += " (at " + finding.Location + ")";
+                sb.Append(EscapeAnnotationMessage(message));
+                sb.Append('\n');
+            }
+            return sb.ToString();
+        }
+
+        static string EscapeAnnotationProperty(string value) =>
+            EscapeAnnotationMessage(value).Replace(":", "%3A").Replace(",", "%2C");
+
+        static string EscapeAnnotationMessage(string value) =>
+            (value ?? "").Replace("%", "%25").Replace("\r", "%0D").Replace("\n", "%0A");
 
         public string ToText()
         {

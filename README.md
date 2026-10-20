@@ -11,8 +11,10 @@ warning at a time, at runtime. That is how a Turkish `ğ`, a Polish `ł` or a Ja
 ships as `□□□`. This package checks the whole project at once, in the editor or in CI:
 
 - every `TMP_Text` in your **scenes** and **prefabs**,
-- **runtime-only text** — localization exports, dialogue files — against the font that
+- **runtime-only text** — localization exports and dialogue files — against the font that
   will display it,
+- **Unity Localization string tables**, when `com.unity.localization` is installed, using a
+  configured TMP font asset for each locale,
 - through the **same fallback chain TMP uses**: the font, its fallback list (depth
   first), the global fallbacks in TMP Settings, then the TMP Settings default font.
   Dynamic font assets count a character as available when their source font file has it,
@@ -62,6 +64,13 @@ Asset Creator (*Character Set → Characters from File*) to build a fallback atl
 Settings are saved to `ProjectSettings/TmpGlyphAuditSettings.json`, so the team and CI
 share them.
 
+If your project uses Unity Localization, add a locale/font pair under **Unity Localization
+string tables**. The audit scans every `StringTable` asset and reports its asset path and
+entry key. The Localization package is optional: without it, the package still compiles and
+all other scan sources continue to work. In Localization string tables, Smart String
+placeholders such as `{0}` and `{player}` are skipped because they are formatting inputs,
+not text drawn by the font.
+
 **CI:** run the same scan in batch mode. Exit code `0` = every character can be drawn,
 `1` = glyphs are missing, `2` = the scan itself failed.
 
@@ -70,6 +79,12 @@ Unity -batchmode -nographics -projectPath . \
   -executeMethod RizgarOzan.TmpGlyphAudit.Editor.GlyphAuditCli.Run \
   -glyphAuditReport Logs/tmp-glyph-audit.txt
 ```
+
+Use a `.json` path (for example `-glyphAuditReport Logs/tmp-glyph-audit.json`) to write
+structured JSON with scan counts, per-font missing code points, and source/location findings.
+The Unity log remains human-readable text regardless of the report file format.
+
+Add `-glyphAuditAnnotations` to emit GitHub Actions `::error` annotations for each missing-glyph finding, visible on the workflow run and pull request.
 
 ## Why not …
 
@@ -91,7 +106,8 @@ Unity -batchmode -nographics -projectPath . \
 The scanner reads text the way TMP's parser does: rich-text tags (`<b>`, `<color=#F00>`,
 `<sprite=3>`, …) are not drawn, `<noparse>` content is drawn literally, `\u011F`-style
 escapes draw the character they name, surrogate pairs are one character, and control,
-zero-width and bidi characters are skipped. Unknown tags such as `<madeup>` are drawn
+zero-width and bidi characters are skipped. When scanning Unity Localization string tables,
+Smart String placeholder spans such as `{player}` and `{0}` are skipped. Unknown tags such as `<madeup>` are drawn
 literally — TMP does the same.
 
 `<font="Name">` switches font mid-text, so the text up to `</font>` is checked against
@@ -112,8 +128,6 @@ selecting the object inside a prefab or scene ([#6](https://github.com/RizgarOza
 
 Known limits:
 
-- **Unity Localization string tables** are not read yet — export them to text or help add
-  it ([#9](https://github.com/RizgarOzan/tmp-glyph-audit/issues/9)).
 - `DynamicOS` font assets are checked against the fonts installed on the machine running the
   audit, which may differ from your players'.
 
