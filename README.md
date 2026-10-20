@@ -67,9 +67,7 @@ share them.
 If your project uses Unity Localization, add a locale/font pair under **Unity Localization
 string tables**. The audit scans every `StringTable` asset and reports its asset path and
 entry key. The Localization package is optional: without it, the package still compiles and
-all other scan sources continue to work. In Localization string tables, Smart String
-placeholders such as `{0}` and `{player}` are skipped because they are formatting inputs,
-not text drawn by the font.
+all other scan sources continue to work.
 
 **CI:** run the same scan in batch mode. Exit code `0` = every character can be drawn,
 `1` = glyphs are missing, `2` = the scan itself failed.
@@ -106,9 +104,9 @@ Add `-glyphAuditAnnotations` to emit GitHub Actions `::error` annotations for ea
 The scanner reads text the way TMP's parser does: rich-text tags (`<b>`, `<color=#F00>`,
 `<sprite=3>`, …) are not drawn, `<noparse>` content is drawn literally, `\u011F`-style
 escapes draw the character they name, surrogate pairs are one character, and control,
-zero-width and bidi characters are skipped. When scanning Unity Localization string tables,
-Smart String placeholder spans such as `{player}` and `{0}` are skipped. Unknown tags such as `<madeup>` are drawn
-literally — TMP does the same.
+zero-width and bidi characters are skipped. In Unity Localization string tables, Smart String
+placeholders such as `{player}` and `{0}` are skipped: they are formatting inputs, not text the
+font draws. Unknown tags such as `<madeup>` are drawn literally — TMP does the same.
 
 `<font="Name">` switches font mid-text, so the text up to `</font>` is checked against
 that font's chain and reported under that font. The name is looked up in
@@ -118,13 +116,16 @@ A tag naming a font that exists nowhere is drawn as text, as TMP draws it.
 
 ## Status
 
-**0.2.0** ([changelog](CHANGELOG.md)). Scenes, prefabs, runtime text files, `<font>` tags,
-the editor window and the batch-mode CLI work and are tested on Unity 6000.3; 2023.2 is the
-declared minimum but has not been run.
+**0.3.0** ([changelog](CHANGELOG.md)). Scenes, prefabs, runtime text files, Unity Localization
+string tables, `<font>` tags, the editor window and the batch-mode CLI (text or JSON report,
+GitHub Actions annotations) work and are tested on Unity 6000.3; 2023.2 is the declared minimum
+but has not been run. The JSON report, the annotations and the string-table scan were contributed
+by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan).
 
-Next, and open to anyone: a JSON report ([#4](https://github.com/RizgarOzan/tmp-glyph-audit/issues/4)),
-GitHub Actions annotations ([#5](https://github.com/RizgarOzan/tmp-glyph-audit/issues/5)),
-selecting the object inside a prefab or scene ([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)).
+Next, and open to anyone: selecting the object inside a prefab or scene
+([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)), a `-glyphAuditSettings` flag so CI
+can use its own settings file ([#7](https://github.com/RizgarOzan/tmp-glyph-audit/issues/7)), a search
+box over the results ([#8](https://github.com/RizgarOzan/tmp-glyph-audit/issues/8)).
 
 Known limits:
 
@@ -137,13 +138,13 @@ The rules (text scanning, fallback resolution, the report) are plain C# with no 
 reference, compiled both into the package and into a .NET project:
 
 ```bash
-dotnet test tests/TmpGlyphAudit.Core.Tests      # 24 tests, no Unity needed
+dotnet test tests/TmpGlyphAudit.Core.Tests      # 28 tests, no Unity needed
 ```
 
 The Unity side is tested in `unity/` (Unity 6000.3, TMP Essential Resources imported):
 
 ```bash
-unity test unity --mode EditMode                 # 5 tests, uses a generated test font
+unity test unity --mode EditMode                 # 7 tests, uses a generated test font
 ```
 
 `tools/make_test_font.py` builds the tiny font the Unity tests use (fontTools), so the repo
