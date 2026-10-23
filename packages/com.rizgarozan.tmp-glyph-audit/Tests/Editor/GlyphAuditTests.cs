@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using RizgarOzan.TmpGlyphAudit;
@@ -112,4 +113,45 @@ public class GlyphAuditTests
         Assert.AreEqual("Menu/Title", finding.Location);
         Assert.AreEqual(new[] { Kanji }, finding.Missing.ToArray());
     }
+
+    [Test]
+    public void Explicit_settings_path_loads_its_own_configuration()
+    {
+        string path = Path.GetTempFileName();
+        try
+        {
+            var expected = new GlyphAuditSettings
+            {
+                folders = new List<string>(),
+                scanScenes = false,
+                scanPrefabs = false,
+                textSources = new List<GlyphAuditSettings.TextSource>(),
+                localizationFonts = new List<GlyphAuditSettings.LocaleFont>()
+            };
+            File.WriteAllText(path, JsonUtility.ToJson(expected));
+
+            var loaded = GlyphAuditSettings.Load(path);
+            Assert.IsTrue(GlyphAudit.Run(loaded).Clean);
+
+            Assert.IsFalse(loaded.scanScenes);
+            Assert.IsFalse(loaded.scanPrefabs);
+            Assert.IsEmpty(loaded.folders);
+            Assert.IsEmpty(loaded.textSources);
+            Assert.IsEmpty(loaded.localizationFonts);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Test]
+    public void Missing_explicit_settings_path_throws_instead_of_falling_back()
+    {
+        string path = Path.GetTempFileName();
+        File.Delete(path);
+
+        Assert.Throws<FileNotFoundException>(() => GlyphAuditSettings.Load(path));
+    }
+
 }

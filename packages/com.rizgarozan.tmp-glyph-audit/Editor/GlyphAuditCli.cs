@@ -17,7 +17,15 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
             int exitCode = 2;
             try
             {
-                var report = GlyphAudit.Run(GlyphAuditSettings.Load());
+                string settingsPath = Argument("-glyphAuditSettings");
+                if (Array.IndexOf(Environment.GetCommandLineArgs(), "-glyphAuditSettings") >= 0 &&
+                    settingsPath == null)
+                    throw new ArgumentException("Expected a path after -glyphAuditSettings.");
+
+                var settings = settingsPath == null
+                    ? GlyphAuditSettings.Load()
+                    : GlyphAuditSettings.Load(settingsPath);
+                var report = GlyphAudit.Run(settings);
                 string path = Argument("-glyphAuditReport") ?? "Logs/tmp-glyph-audit.txt";
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
                 string output = string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase)

@@ -6,6 +6,10 @@ All notable changes to `com.rizgarozan.tmp-glyph-audit`. The format follows
 
 ## [Unreleased]
 
+### Added
+- `-glyphAuditSettings <path>` lets CI jobs use a separate settings file; a missing
+  explicit file fails with exit code 2.
+
 ## [0.3.0] - 2026-10-20
 
 All three by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan), the package's first outside contributor.

@@ -78,6 +78,25 @@ Unity -batchmode -nographics -projectPath . \
   -glyphAuditReport Logs/tmp-glyph-audit.txt
 ```
 
+Use `-glyphAuditSettings path/to/settings.json` to run a CI job with a different settings
+file, for example a stricter language set alongside the project's default scan. The path is
+resolved relative to Unity's working directory. When the flag is supplied, the file must
+exist; a missing file is an error and exits with code `2` rather than silently using the
+project defaults.
+
+For a job that intentionally scans no sources, a minimal settings file can disable scene and
+prefab scans and leave the source lists empty:
+
+```json
+{
+  "folders": [],
+  "scanScenes": false,
+  "scanPrefabs": false,
+  "textSources": [],
+  "localizationFonts": []
+}
+```
+
 Use a `.json` path (for example `-glyphAuditReport Logs/tmp-glyph-audit.json`) to write
 structured JSON with scan counts, per-font missing code points, and source/location findings.
 The Unity log remains human-readable text regardless of the report file format.
@@ -123,9 +142,8 @@ but has not been run. The JSON report, the annotations and the string-table scan
 by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan).
 
 Next, and open to anyone: selecting the object inside a prefab or scene
-([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)), a `-glyphAuditSettings` flag so CI
-can use its own settings file ([#7](https://github.com/RizgarOzan/tmp-glyph-audit/issues/7)), a search
-box over the results ([#8](https://github.com/RizgarOzan/tmp-glyph-audit/issues/8)).
+([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)), a search box over the results
+([#8](https://github.com/RizgarOzan/tmp-glyph-audit/issues/8)).
 
 Known limits:
 
@@ -144,7 +162,7 @@ dotnet test tests/TmpGlyphAudit.Core.Tests      # 28 tests, no Unity needed
 The Unity side is tested in `unity/` (Unity 6000.3, TMP Essential Resources imported):
 
 ```bash
-unity test unity --mode EditMode                 # 7 tests, uses a generated test font
+unity test unity --mode EditMode                 # 9 tests, uses a generated test font
 ```
 
 `tools/make_test_font.py` builds the tiny font the Unity tests use (fontTools), so the repo

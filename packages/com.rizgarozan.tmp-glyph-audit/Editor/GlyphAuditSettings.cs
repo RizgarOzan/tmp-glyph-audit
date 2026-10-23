@@ -46,9 +46,23 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
 
         public static GlyphAuditSettings Load()
         {
-            var settings = File.Exists(Path)
-                ? JsonUtility.FromJson<GlyphAuditSettings>(File.ReadAllText(Path))
+            return File.Exists(Path)
+                ? Load(Path)
                 : new GlyphAuditSettings();
+        }
+
+        /// <summary>Loads a specific settings file and fails if it does not exist.</summary>
+        public static GlyphAuditSettings Load(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("A settings file path is required.", nameof(path));
+            if (!File.Exists(path))
+                throw new FileNotFoundException($"Glyph Audit settings file not found: {path}", path);
+
+            var settings = JsonUtility.FromJson<GlyphAuditSettings>(File.ReadAllText(path));
+            if (settings == null)
+                throw new InvalidDataException($"Glyph Audit settings file did not contain a settings object: {path}");
+
             if (settings.localizationFonts == null)
                 settings.localizationFonts = new List<LocaleFont>();
             return settings;
