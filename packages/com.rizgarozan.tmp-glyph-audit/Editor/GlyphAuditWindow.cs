@@ -1,7 +1,10 @@
+using System;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace RizgarOzan.TmpGlyphAudit.Editor
 {
@@ -55,7 +58,9 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         if (GUILayout.Button("Ping", GUILayout.Width(44)))
-                            EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>(f.Source));
+                            PingFinding(f);
+                        if (GUILayout.Button("Select", GUILayout.Width(52)))
+                            SelectFinding(f);
                         string missing = string.Concat(f.Missing.Select(cp => char.ConvertFromUtf32((int)cp)));
                         EditorGUILayout.LabelField($"{f.Source} > {f.Location}", missing);
                     }
@@ -63,6 +68,114 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
                 EditorGUILayout.Space();
             }
             EditorGUILayout.EndScrollView();
+        }
+
+        void PingFinding(Finding finding) =>
+            EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(finding.Source));
+
+        void SelectFinding(Finding finding)
+        {
+            if (finding.Source.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(finding.Source);
+                if (prefab == null)
+                {
+                    PingFinding(finding);
+                    return;
+                }
+
+                var currentStage = PrefabStageUtility.GetCurrentPrefabStage();
+                if (currentStage != null && currentStage.assetPath == finding.Source)
+                {
+                    SelectHierarchyPath(currentStage.prefabContentsRoot, finding.Location);
+                    return;
+                }
+
+                if (AssetDatabase.OpenAsset(prefab))
+                    EditorApplication.delayCall += () => SelectPrefabFinding(finding.Source, finding.Location);
+                return;
+            }
+
+            if (finding.Source.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+            {
+                var scene = SceneManager.GetSceneByPath(finding.Source);
+                if (!scene.IsValid() || !scene.isLoaded)
+                {
+                    if (!EditorUtility.DisplayDialog(
+                            "Open scene to select finding?",
+                            $"The scene '{finding.Source}' is not open. Save modified scenes and open it to select '{finding.Location}'?",
+                            "Open scene", "Cancel"))
+                        return;
+
+                    if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                        return;
+
+                    scene = EditorSceneManager.OpenScene(finding.Source);
+                }
+
+                SelectHierarchyPath(scene.GetRootGameObjects(), finding.Location);
+                return;
+            }
+
+            // Text files and other non-hierarchy findings retain the asset-ping behaviour.
+            PingFinding(finding);
+        }
+
+        void SelectPrefabFinding(string source, string location)
+        {
+            var stage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (stage == null || stage.assetPath != source)
+            {
+                Debug.LogWarning($"Could not open prefab stage for '{source}' to select '{location}'.");
+                return;
+            }
+
+            SelectHierarchyPath(stage.prefabContentsRoot, location);
+        }
+
+        static void SelectHierarchyPath(GameObject root, string path)
+        {
+            if (root == null) return;
+            var segments = path.Split('/');
+            int index = segments.Length > 0 && segments[0] == root.name ? 1 : 0;
+            var current = root.transform;
+            for (; index < segments.Length; index++)
+            {
+                Transform next = null;
+                for (int i = 0; i < current.childCount; i++)
+                {
+                    var child = current.GetChild(i);
+                    if (child.name != segments[index]) continue;
+                    // Siblings may share a name; the first matching child is selected.
+                    next = child;
+                    break;
+                }
+
+                if (next == null)
+                {
+                    Debug.LogWarning($"Could not find hierarchy path '{path}' under '{root.name}'.");
+                    return;
+                }
+
+                current = next;
+            }
+
+            Selection.activeGameObject = current.gameObject;
+            EditorGUIUtility.PingObject(current.gameObject);
+        }
+
+        static void SelectHierarchyPath(GameObject[] roots, string path)
+        {
+            if (roots == null || roots.Length == 0) return;
+            var segments = path.Split('/');
+            foreach (var root in roots)
+            {
+                if (segments.Length == 0 || root.name != segments[0]) continue;
+                SelectHierarchyPath(root, path);
+                return;
+            }
+
+            Debug.LogWarning($"Could not find root for hierarchy path '{path}'.");
         }
 
         void DrawSettings()
@@ -119,7 +232,7 @@ namespace RizgarOzan.TmpGlyphAudit.Editor
 
         void Scan()
         {
-            if (_settings.scanScenes && !UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            if (_settings.scanScenes && EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo() == false)
                 return;
             _report = GlyphAudit.Run(_settings);
         }
