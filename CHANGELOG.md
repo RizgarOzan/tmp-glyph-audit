@@ -8,7 +8,10 @@ All notable changes to `com.rizgarozan.tmp-glyph-audit`. The format follows
 
 ### Added
 - `-glyphAuditSettings <path>` lets CI jobs use a separate settings file; a missing
-  explicit file fails with exit code 2.
+  explicit file fails with exit code 2 (#14).
+- Unit tests for `AuditReport` that run without Unity (#13).
+
+Both by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan).
 
 ## [0.3.0] - 2026-10-20
 

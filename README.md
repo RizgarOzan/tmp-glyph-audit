@@ -138,12 +138,15 @@ A tag naming a font that exists nowhere is drawn as text, as TMP draws it.
 **0.3.0** ([changelog](CHANGELOG.md)). Scenes, prefabs, runtime text files, Unity Localization
 string tables, `<font>` tags, the editor window and the batch-mode CLI (text or JSON report,
 GitHub Actions annotations) work and are tested on Unity 6000.3; 2023.2 is the declared minimum
-but has not been run. The JSON report, the annotations and the string-table scan were contributed
-by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan).
+but has not been run. The JSON report, the annotations, the string-table scan, the
+`-glyphAuditSettings` option and the `AuditReport` unit tests were contributed by
+[@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan), who is now working on selecting the object
+inside a prefab or scene ([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)).
 
-Next, and open to anyone: selecting the object inside a prefab or scene
-([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)), a search box over the results
-([#8](https://github.com/RizgarOzan/tmp-glyph-audit/issues/8)).
+Next, and open to anyone: a search box over the results
+([#8](https://github.com/RizgarOzan/tmp-glyph-audit/issues/8)), a Markdown report for the GitHub
+job summary ([#16](https://github.com/RizgarOzan/tmp-glyph-audit/issues/16)), missing code points
+shown as ranges ([#17](https://github.com/RizgarOzan/tmp-glyph-audit/issues/17)).
 
 Known limits:
 
@@ -156,7 +159,7 @@ The rules (text scanning, fallback resolution, the report) are plain C# with no 
 reference, compiled both into the package and into a .NET project:
 
 ```bash
-dotnet test tests/TmpGlyphAudit.Core.Tests      # 28 tests, no Unity needed
+dotnet test tests/TmpGlyphAudit.Core.Tests      # 33 tests, no Unity needed
 ```
 
 The Unity side is tested in `unity/` (Unity 6000.3, TMP Essential Resources imported):
