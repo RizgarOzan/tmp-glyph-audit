@@ -2,31 +2,16 @@
 
 [![openupm](https://img.shields.io/npm/v/com.rizgarozan.tmp-glyph-audit?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rizgarozan.tmp-glyph-audit/)
 [![tests](https://github.com/RizgarOzan/tmp-glyph-audit/actions/workflows/tests.yml/badge.svg)](https://github.com/RizgarOzan/tmp-glyph-audit/actions/workflows/tests.yml)
+[![Unity 2023.2+](https://img.shields.io/badge/unity-2023.2%2B-blue)](#install)
+[![licence: MIT](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
-Find every TextMeshPro text your fonts **cannot draw** — before a player sees the
-empty boxes.
+Finds every TextMeshPro text your fonts can't draw, before a player sees the empty boxes.
 
-TextMeshPro only tells you a character is missing when that exact text is rendered, one
-warning at a time, at runtime. That is how a Turkish `ğ`, a Polish `ł` or a Japanese menu
-ships as `□□□`. This package checks the whole project at once, in the editor or in CI:
-
-- every `TMP_Text` in your **scenes** and **prefabs**,
-- **runtime-only text** — localization exports and dialogue files — against the font that
-  will display it,
-- **Unity Localization string tables**, when `com.unity.localization` is installed, using a
-  configured TMP font asset for each locale,
-- through the **same fallback chain TMP uses**: the font, its fallback list (depth
-  first), the global fallbacks in TMP Settings, then the TMP Settings default font.
-  Dynamic font assets count a character as available when their source font file has it,
-  because TMP adds it to the atlas at runtime.
-
-It never modifies a font asset or its atlas.
+TMP only warns about a missing character when that text is rendered, which is how a Turkish `ğ` or a Japanese menu ships as `□□□`. This package checks the whole project at once, in the editor or in CI: every `TMP_Text` in scenes and prefabs, runtime text files (localization exports, dialogue) against the font that will show them, and Unity Localization string tables if `com.unity.localization` is installed. Characters go through TMP's own fallback chain (font, its fallbacks depth first, TMP Settings global fallbacks, default font); dynamic fonts count a character their source file has. Font assets are never modified.
 
 ![The sample text files drawn by TextMeshPro: the Turkish lines render, the Japanese lines come out as empty boxes, and the audit reports 2 texts with missing glyphs](docs/missing-glyphs.png)
 
-*The two sample files in this repository's test project, drawn by TextMeshPro with
-LiberationSans SDF and its fallback (Unity 6000.3, batch mode), with the audit's summary
-under them. The full report names each missing character and, per line, the ones it needs:*
+*The test project's two sample files drawn with LiberationSans SDF and its fallback (Unity 6000.3), rendered by `unity/Assets/Editor/ReadmeImage.cs`. The text report:*
 
 ```
 TMP Glyph Audit: 5 texts scanned, 2 with missing glyphs.
@@ -36,18 +21,15 @@ Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset is miss
   Assets/Localization/ja.txt > line 2: して了保存終
 ```
 
-`unity/Assets/Editor/ReadmeImage.cs` renders the image (the command is in its header comment).
-
 ## Install
 
-Unity 2023.2 or newer (TextMeshPro inside `com.unity.ugui` 2.0). From
-[OpenUPM](https://openupm.com/packages/com.rizgarozan.tmp-glyph-audit/):
+Unity 2023.2 or newer (TMP inside `com.unity.ugui` 2.0). From [OpenUPM](https://openupm.com/packages/com.rizgarozan.tmp-glyph-audit/):
 
 ```
 openupm add com.rizgarozan.tmp-glyph-audit
 ```
 
-or in **Package Manager → + → Add package from git URL**:
+or Package Manager > + > Add package from git URL:
 
 ```
 https://github.com/RizgarOzan/tmp-glyph-audit.git?path=/packages/com.rizgarozan.tmp-glyph-audit
@@ -55,22 +37,11 @@ https://github.com/RizgarOzan/tmp-glyph-audit.git?path=/packages/com.rizgarozan.
 
 ## Use
 
-**Window → Text → TMP Glyph Audit.** Choose folders, tick scenes / prefabs, add runtime
-text files (folder + pattern + the TMP font that shows them) and press **Scan**. For each
-font you get the missing characters and every text that needs them; **Ping** selects the
-asset, **Export characters…** writes the missing set to a `.txt` you can feed to the Font
-Asset Creator (*Character Set → Characters from File*) to build a fallback atlas.
+Open Window > Text > TMP Glyph Audit, pick folders, tick scenes and prefabs, add runtime text files (folder, pattern, font) and press Scan. For Unity Localization add a locale/font pair; findings name the `StringTable` and entry key. The Localization package is optional.
 
-Settings are saved to `ProjectSettings/TmpGlyphAuditSettings.json`, so the team and CI
-share them.
+Results are grouped by font. Export characters… writes the missing set to a `.txt` for the Font Asset Creator (Character Set > Characters from File). Settings live in `ProjectSettings/TmpGlyphAuditSettings.json`, shared with CI.
 
-If your project uses Unity Localization, add a locale/font pair under **Unity Localization
-string tables**. The audit scans every `StringTable` asset and reports its asset path and
-entry key. The Localization package is optional: without it, the package still compiles and
-all other scan sources continue to work.
-
-**CI:** run the same scan in batch mode. Exit code `0` = every character can be drawn,
-`1` = glyphs are missing, `2` = the scan itself failed.
+### CI
 
 ```bash
 Unity -batchmode -nographics -projectPath . \
@@ -78,14 +49,9 @@ Unity -batchmode -nographics -projectPath . \
   -glyphAuditReport Logs/tmp-glyph-audit.txt
 ```
 
-Use `-glyphAuditSettings path/to/settings.json` to run a CI job with a different settings
-file, for example a stricter language set alongside the project's default scan. The path is
-resolved relative to Unity's working directory. When the flag is supplied, the file must
-exist; a missing file is an error and exits with code `2` rather than silently using the
-project defaults.
+Exit code `0` means every character can be drawn, `1` means glyphs are missing, `2` means the scan failed. A `.json` report path gives structured output. `-glyphAuditAnnotations` adds a GitHub Actions `::error` per finding.
 
-For a job that intentionally scans no sources, a minimal settings file can disable scene and
-prefab scans and leave the source lists empty:
+On `main` (not yet in 0.3.0), `-glyphAuditSettings path/to/settings.json` uses another settings file, relative to Unity's working directory; if it's missing the run exits with `2`. A file that scans nothing:
 
 ```json
 {
@@ -97,85 +63,42 @@ prefab scans and leave the source lists empty:
 }
 ```
 
-Use a `.json` path (for example `-glyphAuditReport Logs/tmp-glyph-audit.json`) to write
-structured JSON with scan counts, per-font missing code points, and source/location findings.
-The Unity log remains human-readable text regardless of the report file format.
+## What counts as a glyph
 
-Add `-glyphAuditAnnotations` to emit GitHub Actions `::error` annotations for each missing-glyph finding, visible on the workflow run and pull request.
+Text is parsed like TMP does: tags aren't drawn, `<noparse>` content and unknown tags are, `\u011F` escapes count as their character, and control, zero-width and bidi characters are skipped, as are Smart String placeholders (`{player}`) in string tables.
 
-## Why not …
+Text inside `<font="Name">` is checked against that font, looked up in `Resources/<TMP Settings font path>` and then among all TMP font assets in the project. A tag naming a font that doesn't exist is drawn as text.
 
-- **TMP's own warning** ("The character with Unicode value … was not found in the [font]
-  font asset or any potential fallbacks") is logged only when that text is rendered, so it
-  covers the screens someone opened, in the language they played. The audit reads every
-  text without running the game.
-- **`TMP_FontAsset.HasCharacters`** checks a string you already have. Finding every string
-  in scenes, prefabs and data files, and leaving out rich-text tags, is the work this
-  package does.
-- **The Font Asset Creator's missing-character report** lists characters of the set you
-  typed that the source font file lacks. It doesn't know which characters your texts use,
-  or that a fallback font already covers them.
-- **Ready-made character lists** per language are good input for building an atlas. They
-  tell you what a language may use, not what your project's text uses today.
+## Why not TMP's own tools
 
-## What counts as "needs a glyph"
-
-The scanner reads text the way TMP's parser does: rich-text tags (`<b>`, `<color=#F00>`,
-`<sprite=3>`, …) are not drawn, `<noparse>` content is drawn literally, `\u011F`-style
-escapes draw the character they name, surrogate pairs are one character, and control,
-zero-width and bidi characters are skipped. In Unity Localization string tables, Smart String
-placeholders such as `{player}` and `{0}` are skipped: they are formatting inputs, not text the
-font draws. Unknown tags such as `<madeup>` are drawn literally — TMP does the same.
-
-`<font="Name">` switches font mid-text, so the text up to `</font>` is checked against
-that font's chain and reported under that font. The name is looked up in
-`Resources/<TMP Settings font path>` (`Fonts & Materials/` by default), then among all TMP
-font assets in the project, since TMP also finds fonts other texts have already loaded.
-A tag naming a font that exists nowhere is drawn as text, as TMP draws it.
+TMP's runtime warning covers only screens someone opened. `TMP_FontAsset.HasCharacters` needs the strings already collected. The Font Asset Creator's report doesn't know what your texts use or what a fallback covers.
 
 ## Status
 
-**0.3.0** ([changelog](CHANGELOG.md)). Scenes, prefabs, runtime text files, Unity Localization
-string tables, `<font>` tags, the editor window and the batch-mode CLI (text or JSON report,
-GitHub Actions annotations) work and are tested on Unity 6000.3; 2023.2 is the declared minimum
-but has not been run. The JSON report, the annotations, the string-table scan, the
-`-glyphAuditSettings` option and the `AuditReport` unit tests were contributed by
-[@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan), who is now working on selecting the object
-inside a prefab or scene ([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)).
+**0.3.0** ([changelog](CHANGELOG.md)). The JSON report, annotations, string-table scan, `-glyphAuditSettings` and the `AuditReport` unit tests were contributed by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan), who is now working on selecting the object inside a prefab or scene ([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)).
 
-Next, and open to anyone: a search box over the results
-([#8](https://github.com/RizgarOzan/tmp-glyph-audit/issues/8)), a Markdown report for the GitHub
-job summary ([#16](https://github.com/RizgarOzan/tmp-glyph-audit/issues/16)), missing code points
-shown as ranges ([#17](https://github.com/RizgarOzan/tmp-glyph-audit/issues/17)).
+Open to anyone: a search box over the results ([#8](https://github.com/RizgarOzan/tmp-glyph-audit/issues/8)), a Markdown report for the GitHub job summary ([#16](https://github.com/RizgarOzan/tmp-glyph-audit/issues/16)), missing code points shown as ranges ([#17](https://github.com/RizgarOzan/tmp-glyph-audit/issues/17)).
 
-Known limits:
+## Limits
 
-- `DynamicOS` font assets are checked against the fonts installed on the machine running the
-  audit, which may differ from your players'.
+- Only TextMeshPro. uGUI `Text`, UI Toolkit and IMGUI text are not scanned.
+- Only text the project holds: strings built in code at runtime, or fetched from a server, are not seen unless they are exported to a file the audit reads.
+- `DynamicOS` font assets are checked against the fonts installed on the machine running the audit, which may differ from your players'.
+- Tested on Unity 6000.3 only; 2023.2 is the declared minimum but untested.
 
 ## Develop
 
-The rules (text scanning, fallback resolution, the report) are plain C# with no Unity
-reference, compiled both into the package and into a .NET project:
+The core rules are plain C# with no Unity reference, also compiled into a .NET project:
 
 ```bash
 dotnet test tests/TmpGlyphAudit.Core.Tests      # 33 tests, no Unity needed
+unity test unity --mode EditMode                 # Unity 6000.3, TMP Essential Resources imported
 ```
 
-The Unity side is tested in `unity/` (Unity 6000.3, TMP Essential Resources imported):
+The Unity tests use a tiny font built by `tools/make_test_font.py` (fontTools), so the repo carries no third-party font.
 
-```bash
-unity test unity --mode EditMode                 # 9 tests, uses a generated test font
-```
-
-`tools/make_test_font.py` builds the tiny font the Unity tests use (fontTools), so the repo
-carries no third-party font of its own.
-
-Want to help? Issues labelled [`good first issue`](https://github.com/RizgarOzan/tmp-glyph-audit/labels/good%20first%20issue)
-say what to change and how the result is checked; several need only the .NET SDK, not Unity.
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the layout and the checks a pull request needs.
+[`good first issue`](https://github.com/RizgarOzan/tmp-glyph-audit/labels/good%20first%20issue) issues say what to change and how it's checked; several need only the .NET SDK. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE). TMP Essential Resources inside `unity/` belong to Unity and
-come with its TextMeshPro package.
+MIT, see [LICENSE](LICENSE). The TMP Essential Resources inside `unity/` belong to Unity and come with its TextMeshPro package.
