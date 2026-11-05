@@ -6,6 +6,8 @@ All notable changes to `com.rizgarozan.tmp-glyph-audit`. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-05
+
 ### Added
 - `-glyphAuditSettings <path>` lets CI jobs use a separate settings file; a missing
   explicit file fails with exit code 2 (#14).
@@ -42,7 +44,8 @@ All three by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan), the package
   Font Asset Creator.
 - Batch-mode entry point `GlyphAuditCli.Run` with exit codes for CI.
 
-[Unreleased]: https://github.com/RizgarOzan/tmp-glyph-audit/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/RizgarOzan/tmp-glyph-audit/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/RizgarOzan/tmp-glyph-audit/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/RizgarOzan/tmp-glyph-audit/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/RizgarOzan/tmp-glyph-audit/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RizgarOzan/tmp-glyph-audit/releases/tag/v0.1.0

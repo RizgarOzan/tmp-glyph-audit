@@ -51,7 +51,7 @@ Unity -batchmode -nographics -projectPath . \
 
 Exit code `0` means every character can be drawn, `1` means glyphs are missing, `2` means the scan failed. A `.json` report path gives structured output. `-glyphAuditAnnotations` adds a GitHub Actions `::error` per finding.
 
-On `main` (not yet in 0.3.0), `-glyphAuditSettings path/to/settings.json` uses another settings file, relative to Unity's working directory; if it's missing the run exits with `2`. A file that scans nothing:
+`-glyphAuditSettings path/to/settings.json` uses another settings file, relative to Unity's working directory; if it's missing the run exits with `2`. A file that scans nothing:
 
 ```json
 {
@@ -75,7 +75,7 @@ TMP's runtime warning covers only screens someone opened. `TMP_FontAsset.HasChar
 
 ## Status
 
-**0.3.0** ([changelog](CHANGELOG.md)). The JSON report, annotations, string-table scan, `-glyphAuditSettings` and the `AuditReport` unit tests were contributed by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan), who is now working on selecting the object inside a prefab or scene ([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)).
+**0.4.0** ([changelog](CHANGELOG.md)). The JSON report, annotations, string-table scan, `-glyphAuditSettings` and the `AuditReport` unit tests were contributed by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan), who is now working on selecting the object inside a prefab or scene ([#6](https://github.com/RizgarOzan/tmp-glyph-audit/issues/6)).
 
 Open to anyone: a search box over the results ([#8](https://github.com/RizgarOzan/tmp-glyph-audit/issues/8)), a Markdown report for the GitHub job summary ([#16](https://github.com/RizgarOzan/tmp-glyph-audit/issues/16)), missing code points shown as ranges ([#17](https://github.com/RizgarOzan/tmp-glyph-audit/issues/17)).
 
